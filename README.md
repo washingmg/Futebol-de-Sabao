@@ -21,3 +21,6 @@ A bola sempre começa com Joãozinho, e **cada jogador só pode dar 1 toque na b
 3. Acompanhe a simulação do jogo no terminal com os gols e placares sendo exibidos.
 
 ---
+
+![Captura de tela 2025-08-31 111904](https://github.com/user-attachments/assets/443eedcf-68c1-426c-bc6a-09afa1117663)
+
