@@ -1,8 +1,70 @@
 import threading
 import random
-import time
 
-# Classe Jogador (Thread)
+class Jogo:
+    def __init__(self, n_jogadores):
+        self.n_jogadores = n_jogadores
+        self.times = [0, 0]  # placar
+        self.fim = False
+
+        # Controle da posse da bola
+        self.jogadores = []
+        self.bola = 0  # começa com Joãozinho (jogador 0)
+        self.semaforos = [threading.Semaphore(0) for _ in range(n_jogadores)]
+        self.semaforos[self.bola].release()  # libera Joãozinho
+
+        # Histórico de toques
+        self.ultimos_toques = []
+        self.lock = threading.Lock()
+
+    def registrar_toque(self, jogador_id, time):
+        with self.lock:
+            # Guarda o toque
+            self.ultimos_toques.append((jogador_id, time))
+            if len(self.ultimos_toques) > 10:
+                self.ultimos_toques.pop(0)
+
+            # Verifica gol
+            gol = self.verificar_gol()
+            if gol:
+                self.times[time] += 1
+                print(f"⚽ GOL DO TIME {time}! Tipo: {gol}")
+                print(f"Placar: TIME 0 [{self.times[0]}] x [{self.times[1]}] TIME 1\n")
+
+                # Condição de fim
+                if abs(self.times[0] - self.times[1]) >= 500:
+                    self.fim = True
+                    # libera todos os semáforos para encerrar as threads
+                    for sem in self.semaforos:
+                        sem.release()
+                    return
+
+            # Passa a bola para o próximo jogador aleatório
+            if not self.fim:
+                proximo = random.randint(0, self.n_jogadores - 1)
+                self.bola = proximo
+                self.semaforos[proximo].release()
+
+    def verificar_gol(self):
+        # Regra 1: 5 toques consecutivos do mesmo time
+        if len(self.ultimos_toques) >= 5:
+            ultimos_5 = self.ultimos_toques[-5:]
+            if all(t[1] == ultimos_5[0][1] for t in ultimos_5):
+                return "5 TOQUES"
+
+        # Regra 2: Tabelinha entre dois jogadores do mesmo time alternando 3 vezes
+        if len(self.ultimos_toques) >= 6:
+            ultimos_6 = self.ultimos_toques[-6:]
+            jogadores = [j for j, _ in ultimos_6]
+            times = [t for _, t in ultimos_6]
+            if len(set(jogadores)) == 2 and len(set(times)) == 1:
+                padrao = [jogadores[0], jogadores[1]] * 3
+                if jogadores == padrao:
+                    return "TABELINHA"
+
+        return None
+
+
 class Jogador(threading.Thread):
     def __init__(self, id, time, jogo):
         super().__init__()
@@ -11,91 +73,32 @@ class Jogador(threading.Thread):
         self.jogo = jogo
 
     def run(self):
-        while not self.jogo.fim:
-            with self.jogo.condicao:
-                while self.jogo.bola != self.id and not self.jogo.fim:
-                    self.jogo.condicao.wait()
-                if self.jogo.fim:
-                    break
-
-                proximo = random.choice(self.jogo.jogadores_ids)
-                while proximo == self.id:  # não pode passar pra si mesmo
-                    proximo = random.choice(self.jogo.jogadores_ids)
-
-                self.jogo.registrar_toque(self.id, self.time, proximo)
-                self.jogo.bola = proximo
-                self.jogo.condicao.notify_all()
+        while True:
+            self.jogo.semaforos[self.id].acquire()
+            if self.jogo.fim:
+                break
+            self.jogo.registrar_toque(self.id, self.time)
 
 
-# Classe Jogo
-class Jogo:
-    def __init__(self, n_jogadores):
-        self.n_jogadores = n_jogadores
-        self.jogadores_ids = list(range(n_jogadores))
-        self.condicao = threading.Condition()
-        self.bola = 0
-        self.times = {i: (1 if i % 2 == 0 else 2) for i in self.jogadores_ids}
-        self.toques_consecutivos = []
-        self.tabelinha = []
-        self.placar = {1: 0, 2: 0}
-        self.fim = False
-
-    def registrar_toque(self, jogador, time, proximo):
-        print(f"Jogador {jogador} (Time {time}) passou para Jogador {proximo} (Time {self.times[proximo]})")
-        print(f"Placar em tempo real: Time 1 [{self.placar[1]}] x [{self.placar[2]}] Time 2\n")
-
-        # Verifica regra dos 5 toques consecutivos
-        if not self.toques_consecutivos or self.toques_consecutivos[-1] == time:
-            self.toques_consecutivos.append(time)
-        else:
-            self.toques_consecutivos = [time]
-        if len(self.toques_consecutivos) >= 5:
-            self.gol(time, "5 toques consecutivos")
-            self.toques_consecutivos = []
-
-        # Verifica regra da tabelinha (2 jogadores do mesmo time alternando 3x)
-        if len(self.tabelinha) >= 1 and self.tabelinha[-1][1] == time:
-            if self.tabelinha[-1][0] != jogador:
-                self.tabelinha.append((jogador, time))
-            else:
-                self.tabelinha = [(jogador, time)]
-        else:
-            self.tabelinha = [(jogador, time)]
-
-        if len(self.tabelinha) >= 6:  
-            self.gol(time, "tabelinha")
-            self.tabelinha = []
-
-        # Condição de fim de jogo
-        if abs(self.placar[1] - self.placar[2]) >= 500:
-            self.fim = True
-
-    def gol(self, time, tipo):
-        self.placar[time] += 1
-        print(f"\n⚽ GOL do Time {time} ({tipo})!")
-        print(f"Placar atualizado: Time 1 [{self.placar[1]}] x [{self.placar[2]}] Time 2\n")
-
-
-# Execução principal
-if __name__ == "__main__":
-    n = int(input("Digite o número de jogadores (par > 4): "))
-    if n <= 4 or n % 2 != 0:
-        print("Número inválido! Tem que ser par e > 4.")
-        exit()
+def main():
+    while True:
+        n = int(input("Digite o número de jogadores (par e > 4): "))
+        if n > 4 and n % 2 == 0:
+            break
+        print("Valor inválido! Tente novamente.")
 
     jogo = Jogo(n)
-    jogadores = [Jogador(i, jogo.times[i], jogo) for i in jogo.jogadores_ids]
+    for i in range(n):
+        jogador = Jogador(i, i % 2, jogo)
+        jogo.jogadores.append(jogador)
+        jogador.start()
 
-    for j in jogadores:
-        j.start()
-
-    # Bola começa com Joãozinho
-    with jogo.condicao:
-        jogo.condicao.notify_all()
-
-    for j in jogadores:
+    for j in jogo.jogadores:
         j.join()
 
-    # Placar final
-    print("\nFim de jogo!")
-    print(f"Placar final: Time 1 [{jogo.placar[1]}] x [{jogo.placar[2]}] Time 2")
+    print("🏁 Fim de jogo!")
+    print(f"Placar final: TIME 0 [{jogo.times[0]}] x [{jogo.times[1]}] TIME 1")
+
+
+if __name__ == "__main__":
+    main()
