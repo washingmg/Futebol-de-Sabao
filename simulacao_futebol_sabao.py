@@ -7,6 +7,10 @@ class Jogo:
         self.times = [0, 0]  # placar
         self.fim = False
 
+        # Contadores de tipos de gol
+        self.gols_5 = 0
+        self.gols_tabela = 0
+
         # Controle da posse da bola
         self.jogadores = []
         self.bola = 0  # começa com Joãozinho (jogador 0)
@@ -28,13 +32,18 @@ class Jogo:
             gol = self.verificar_gol()
             if gol:
                 self.times[time] += 1
+                if gol == "5 TOQUES":
+                    self.gols_5 += 1
+                elif gol == "TABELINHA":
+                    self.gols_tabela += 1
+
                 print(f"⚽ GOL DO TIME {time}! Tipo: {gol}")
                 print(f"Placar: TIME 0 [{self.times[0]}] x [{self.times[1]}] TIME 1\n")
 
                 # Condição de fim
                 if abs(self.times[0] - self.times[1]) >= 500:
                     self.fim = True
-                    # libera todos os semáforos para encerrar as threads
+                    # libera todos os semáforos para encerrar threads
                     for sem in self.semaforos:
                         sem.release()
                     return
@@ -54,13 +63,15 @@ class Jogo:
 
         # Regra 2: Tabelinha entre dois jogadores do mesmo time alternando 3 vezes
         if len(self.ultimos_toques) >= 6:
-            ultimos_6 = self.ultimos_toques[-6:]
-            jogadores = [j for j, _ in ultimos_6]
-            times = [t for _, t in ultimos_6]
-            if len(set(jogadores)) == 2 and len(set(times)) == 1:
-                padrao = [jogadores[0], jogadores[1]] * 3
-                if jogadores == padrao:
-                    return "TABELINHA"
+            # Procuramos alternância entre dois jogadores do mesmo time
+            for i in range(len(self.ultimos_toques) - 5):
+                sub = self.ultimos_toques[i:i+6]
+                jogadores = [j for j, _ in sub]
+                times = [t for _, t in sub]
+                if len(set(jogadores)) == 2 and len(set(times)) == 1:
+                    padrao = [jogadores[0], jogadores[1]] * 3
+                    if jogadores == padrao:
+                        return "TABELINHA"
 
         return None
 
@@ -98,7 +109,8 @@ def main():
 
     print("🏁 Fim de jogo!")
     print(f"Placar final: TIME 0 [{jogo.times[0]}] x [{jogo.times[1]}] TIME 1")
-
+    # print(f"Gols de 5 TOQUES: {jogo.gols_5}")
+    # print(f"Gols de TABELINHA: {jogo.gols_tabela}")
 
 if __name__ == "__main__":
     main()
