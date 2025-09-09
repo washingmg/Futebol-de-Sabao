@@ -1,6 +1,7 @@
 # Futebol de Sabão (Simulação com Threads)
-
-## Descrição
+## Este trabalho está sendo desenvolvido pelos discentes do curso de Ciência da Computação na disciplina de Sistemas Operacionais (SO), com intuito de obtenção da nota avaliativa para a AV2.
+---
+## Descrição do Problema
 Joãozinho e seus amigos adoram Futebol de Sabão. Cada amigo de Joãozinho é representado por **uma thread**.  
 A bola sempre começa com Joãozinho, e **cada jogador só pode dar 1 toque na bola**.
 
