@@ -1,10 +1,3 @@
-# main_unified_corrected.py
-"""
-Implementação unificada e corrigida do jogo "Futebol de Sabão".
-Este script combina as constantes, os componentes de lógica de negócio e
-a orquestração de concorrência em um só lugar para facilitar a execução.
-"""
-
 import threading
 import random
 from collections import deque
