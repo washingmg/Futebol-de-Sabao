@@ -72,11 +72,16 @@ Este trabalho explora, de forma prática, alguns dos principais conceitos da dis
 
 ## 📊 Exemplo de Saída
 ```
-GOL DO TIME 1! Tipo: 5 TOQUES
-Placar: TIME 0 [3] x [4] TIME 1
+GOL DO TIME 0! Tipo: 5 TOQUES
+Placar: TIME 0 [19362] x [18863] TIME 1
 
-GOL DO TIME 0! Tipo: TABELINHA
-Placar: TIME 0 [4] x [4] TIME 1
+GOL DO TIME 0! Tipo: 5 TOQUES
+Placar: TIME 0 [19363] x [18863] TIME 1
+
+Fim de jogo!!
+Placar final: TIME 0 [19363] x [18863] TIME 1
+Gols de 5 TOQUES: 38069
+Gols de TABELINHA: 157
 ```
 
 ## 📈 Estatísticas Finais
